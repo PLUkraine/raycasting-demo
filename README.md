@@ -1,7 +1,7 @@
 # Raycasting Demo
 Raycasting game engine
 
-![Screenshot](https://preview.ibb.co/m3x0pG/Screen_Shot_2018_01_28_at_17_57_38.png "Screenshot")
+![Screenshot](https://preview.ibb.co/mJzNmw/Screen_Shot_2018_01_28_at_20_23_58.png "Screenshot")
 
 ## How to build
 This project should work on Windows, Linux and Mac OS. Tested on Mac OS and Windows

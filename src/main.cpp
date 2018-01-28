@@ -221,9 +221,13 @@ int main()
                         float angle = atan2(dirFromCenter.y, dirFromCenter.x);
                         int octant = raycaster::getOctant((double)angle);
                         
-                        if (octant==4||octant==5||octant==8||octant==1)
+                        if (octant==4||octant==5)
                             uvTextureSample.x = raycaster::getFraction(hitCoord.y);
-                        if (octant==6||octant==7||octant==2||octant==3)
+                        if(octant==8||octant==1)
+                            uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.y);
+                        if (octant==6||octant==7)
+                            uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.x);
+                        if (octant==2||octant==3)
                             uvTextureSample.x = raycaster::getFraction(hitCoord.x);
 					}
 				}
@@ -272,6 +276,7 @@ int main()
 		window.update();
 	}
 
+    brickTexture.dispose();
 	tex1->dispose();
 	renderer.dispose();
 	window.dispose();
