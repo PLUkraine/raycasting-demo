@@ -1,7 +1,7 @@
 # Raycasting Demo
 Raycasting game engine
 
-![Screenshot](https://preview.ibb.co/bQ3O3b/Screen_Shot_2018_01_23_at_22_19_41.png "Screenshot")
+![Screenshot](https://preview.ibb.co/m3x0pG/Screen_Shot_2018_01_28_at_17_57_38.png "Screenshot")
 
 ## How to build
 This project should work on Windows, Linux and Mac OS. Tested on Mac OS and Windows
@@ -15,11 +15,11 @@ This project should work on Windows, Linux and Mac OS. Tested on Mac OS and Wind
 
 3. Create a project in the IDE of your choise (ex. __XCode__ or __Visual Studio__) and add all files from *src/* directory.
 4. Link library and include *include* directory from this repository
-5. Compile and put __shader.vert__ and __shader.frag__ files near executable. Or they should be put in the working directory of your IDE
+5. Compile the program and put contents of the __resources__ directory near executable. Or they should be put in the working directory of your IDE.
 6. Run the program and have fun :)
 
 * Note for Windows users - link opengl32.lib library as well
-* Note for XCode users - include following frameworks
+* Note for XCode users - include the following frameworks
   * CoreVideo
   * IOKit
   * Cocoa

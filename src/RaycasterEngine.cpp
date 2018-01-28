@@ -27,11 +27,6 @@ namespace raycaster
 	{
 		return 0 <= v && v < b;
 	}
-	template <class T>
-	bool inB(T v, T a, T b)
-	{
-		return a <= v && v < b;
-	}
 
 	int getOctant(double angle)
 	{
@@ -159,6 +154,13 @@ namespace raycaster
 	}
 
     //real deal
+    template<>
+    bool vec2<float>::operator==(const vec2<float> &o) const
+    {
+        const static float EPS = 1e-8;
+        return fabsf(x - o.x) < EPS && fabsf(y - o.y) < EPS;
+    }
+    
     vec2<float> RepeatingSampler::sample(vec2<float> normCoord, vec2<float> dimentions)
     {
         vec2<float> coord = getFraction(normCoord);

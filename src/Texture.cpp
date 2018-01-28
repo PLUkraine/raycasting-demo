@@ -1,15 +1,45 @@
 #include "Texture.h"
 
 #include "string.h"
-
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#include "spdlog/spdlog.h"
 namespace core
 {
+    ImageBase::ImageBase()
+        : m_width(0),
+        m_height(0),
+        m_colors(0),
+        m_data(nullptr)
+    {}
+    
+    Image::~Image()
+    {
+        dispose();
+    }
+    void Image::loadFromFile(const char *file)
+    {
+        assert(m_data == nullptr);
+        m_data = stbi_load(file, &m_width, &m_height, &m_colors, 0);
+        assert(m_data != nullptr);
+        spdlog::get("console")->info("Image \"{0}\" {1}x{2}x{3} loaded successfully", file, m_width, m_height, m_colors);
+    }
+    void Image::dispose()
+    {
+        if (m_data)
+        {
+            stbi_image_free(m_data);
+            m_width = m_height = m_colors = 0;
+            m_data = nullptr;
+        }
+    }
+    
+    
 	Texture::Texture()
-		: m_data(nullptr),
-		m_height(0),
-		m_width(0),
+		: core::ImageBase(),
 		m_glTex(0)
 	{
+        m_colors = COLORS;
 	}
 
 	Texture::~Texture()
@@ -22,6 +52,7 @@ namespace core
 		if (m_data != nullptr)
 		{
 			delete[] m_data;
+            m_width = m_height = 0;
 			m_data = nullptr;
 		}
 		if (m_glTex != 0)
@@ -61,7 +92,7 @@ namespace core
 	// fill local buffer with black color
 	void Texture::clearTexture() const
 	{
-		memset(m_data, 0, m_width * m_height * COLORS);
+		memset(m_data, 0, m_width * m_height * m_colors);
 	}
 
 	// load from local buffer to Video card RAM

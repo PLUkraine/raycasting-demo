@@ -109,9 +109,11 @@ int main()
 	Shader shader("shader.vert", "shader.frag");
 	shader.use();
 	
+    // tex1 doesn't have to be a pointer, just a legacy I'm too lasy to get rid of
 	core::Texture *tex1 = new core::Texture();
 	tex1->createGlTexture(TEX1_WIDTH, TEX1_HEIGHT);
-
+    core::Image brickTexture;
+    brickTexture.loadFromFile("brick.png");
 	core::ImageRenderer renderer;
 
 	bool board[BOARD_HEIGHT][BOARD_WIDTH] =
@@ -143,16 +145,19 @@ int main()
 		double end = glfwGetTime();
 		double dt = end - start;
 		start = end;
+        // make processor sleep if we are getting our job done in time
 		if (dt < (1. / 60.))
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds((1000 / 60 - (int)dt*1000)));
 		}
 		
 		// input processing ...
+        // rotations
 		if (window.getKeyState(GLFW_KEY_LEFT) == GLFW_PRESS)
             p.rotate(-1.15f*dt);
 		if (window.getKeyState(GLFW_KEY_RIGHT) == GLFW_PRESS)
             p.rotate(1.15f*dt);
+        // walking forwards/backwards
 		if (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_UP)
             |window.getKeyState(GLFW_KEY_W)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS)
 		{
@@ -165,6 +170,7 @@ int main()
                 p.m_pos = previous;
             }
 		}
+        // strafing left/right
         if (window.getKeyState(GLFW_KEY_A)|window.getKeyState(GLFW_KEY_D) == GLFW_PRESS)
         {
             vec2<float> previous = p.m_pos;
@@ -176,15 +182,12 @@ int main()
                 p.m_pos = previous;
             }
         }
-		//console->debug("x {0} y {1} a {2}", p.m_x, p.m_y, p.m_angle);
-
 
 		// update texture here ...
 		tex1->clearTexture();
 		// raycast here!
 		const float MAX_DIST = 16.f;
 		const float DIST_STEP = 0.05f;
-		const float CORNER_ANGLE = 0.005f;
 		for (int x = 0; x < tex1->width(); ++x)
 		{
             // [-pov/2; +pov/2]
@@ -194,7 +197,8 @@ int main()
             vec2<float> projVec = {cosf(rayAngle), sinf(rayAngle)};
             
 			bool wallHit = false;
-			bool cornerHit = false;
+            //
+            vec2<float> uvTextureSample(0.f, 0.f);
 			while (!wallHit && wallDist < MAX_DIST)
 			{
 				wallDist += DIST_STEP;
@@ -211,45 +215,51 @@ int main()
 					if (board[blockCoord.y][blockCoord.x])
 					{
 						wallHit = true;
-
-						// find corners
-						for (int dx = 0; dx < 2; ++dx)
-						{
-							for (int dy = 0; dy < 2; ++dy)
-							{
-                                vec2<float> cornerCoord = vec2<float>(blockCoord.x + dx, blockCoord.y + dy);
-                                vec2<float> playerToVertexDir = cornerCoord - p.m_pos;
-                                
-                                float angle = projVec.dot(playerToVertexDir.norm());
-                                if (acosf(angle)<CORNER_ANGLE)
-                                {
-                                    vec2<float> littleBack = cornerCoord - playerToVertexDir.norm()*0.1f;
-                                    if (!board[(int)littleBack.y][(int)littleBack.x])
-                                    {
-                                        cornerHit = true;
-                                    }
-                                }
-							}
-						}
+                        
+                        vec2<float> wallCenter = vec2<float>(blockCoord.x+0.5f, blockCoord.y+0.5f);
+                        vec2<float> dirFromCenter = hitCoord - wallCenter;
+                        float angle = atan2(dirFromCenter.y, dirFromCenter.x);
+                        int octant = raycaster::getOctant((double)angle);
+                        
+                        if (octant==4||octant==5||octant==8||octant==1)
+                            uvTextureSample.x = raycaster::getFraction(hitCoord.y);
+                        if (octant==6||octant==7||octant==2||octant==3)
+                            uvTextureSample.x = raycaster::getFraction(hitCoord.x);
 					}
 				}
 			}
 
             // z is a distance to a wall
+            // this line prevents the Fisheye Effect
 			float z = wallDist * cosf(rayDisplacementAngle);
-			int nCeiling = tex1->height() / 2.f - tex1->height() / z;
-			int nFloor = tex1->height() - nCeiling;
+			int floorYBorder = tex1->height() / 2.f - tex1->height() / z;
+			int ceilingYBorder = tex1->height() - floorYBorder;
 
-			// white near us, black when far, black if corner
-            GLubyte color = cornerHit ? 0x00 : /*0xff*expf(-5.5452f*z/MAX_DIST);*/ /*0xff * (-logf(z/11.f+1)+1);*/ /*0xff*expf(-0.231f*z); */ 0xff * (1 - z / MAX_DIST);
+			// white near us, black when far
+            float colorMult = 1.0 * (1 - z / MAX_DIST);
 
             // paint the texture
             // TODO do it in shader one day
 			for (int y = 0; y < tex1->height(); ++y)
 			{
-				if (y <= nCeiling) tex1->setPixel(x, y, 0x55, 0x55, 0x55);
-				else if (y <= nFloor) tex1->setPixel(x, y, color, color, color);
-				else tex1->setPixel(x, y, 0x55, 0x55, 0xff);
+                // floor
+				if (y <= floorYBorder) {
+                    tex1->setPixel(x, y, 0x55, 0x55, 0x55);
+                }
+                // wall
+                else if (y < ceilingYBorder) {
+                    uvTextureSample.y = ((float)y - floorYBorder) / (ceilingYBorder - floorYBorder);
+                    vec2<int> coord = uvTextureSample.multPerCoord(vec2<float>(brickTexture.width(), brickTexture.height()));
+                    tex1->setPixel(x, y,
+                                   colorMult*brickTexture.getData(coord.x, coord.y, 0),
+                                   colorMult*brickTexture.getData(coord.x, coord.y, 1),
+                                   colorMult*brickTexture.getData(coord.x, coord.y, 2)
+                                   );
+                }
+                // ceiling
+                else {
+                    tex1->setPixel(x, y, 0x55, 0x55, 0xff);
+                }
 			}
 
 		}

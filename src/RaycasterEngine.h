@@ -25,6 +25,11 @@ namespace raycaster
         template<typename Y>
         vec2(const vec2<Y> &o) : x(static_cast<T>(o.x)), y(static_cast<T>(o.y)) {}
         
+        bool operator==(const vec2<T> &o) const
+        {
+            return x == o.x && y == o.y;
+        }
+        
         vec2<T> operator+(const vec2 &o) const
         {
             return vec2(o.x+x, o.y+y);
@@ -54,7 +59,7 @@ namespace raycaster
             return vec2(x/scalar, y/scalar);
         }
         
-        vec2<T> multPerCoord(const vec2 &o)
+        vec2<T> multPerCoord(const vec2 &o) const
         {
             return vec2(x*o.x, y*o.y);
         }
@@ -96,6 +101,11 @@ namespace raycaster
         vec2<float> sample(vec2<float> normCoord, vec2<float> dimentions);
     };
     
+    template <class T>
+    bool inB(T v, T a, T b)
+    {
+        return a <= v && v < b;
+    }
     
 	void drawLinef(core::Texture *image, int x0, int y0, double angle);
 	void drawLine(core::Texture *image, int x0, int y0, int x1, int y1);
