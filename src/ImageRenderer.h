@@ -7,18 +7,18 @@
 
 namespace core
 {
-	class ImageRenderer
-	{
-	private:
-		GLuint m_quadVAO;
-		GLuint m_quadVBO;
-	public:
-		ImageRenderer();
-		~ImageRenderer();
-
-		void dispose();
-		void render(Texture *tex, Shader *shader);
-	};
+    class ImageRenderer
+    {
+    private:
+        GLuint m_quadVAO;
+        GLuint m_quadVBO;
+    public:
+        ImageRenderer();
+        ~ImageRenderer();
+        
+        void dispose();
+        void render(Texture *tex, Shader *shader);
+    };
 }
 
 #endif

@@ -8,152 +8,6 @@
 
 namespace raycaster
 {
-
-	int getOctant(int dx, int dy)
-	{
-		bool dxLarger = abs(dx) > abs(dy);
-
-		if (dx > 0 && dy > 0)
-			return dxLarger ? 1 : 2;
-		else if (dx < 0 && dy > 0)
-			return dxLarger ? 4 : 3;
-		else if (dx < 0 && dy < 0)
-			return dxLarger ? 5 : 6;
-		else
-			return dxLarger ? 8 : 7;
-	}
-
-	bool inB(int v, int b)
-	{
-		return 0 <= v && v < b;
-	}
-
-	int getOctant(double angle)
-	{
-		const static double M_PI_3_4 = M_PI_2 + M_PI_4;
-		if (inB(angle, -M_PI, -M_PI_3_4))
-			return 5;
-		if (inB(angle, -M_PI_3_4, -M_PI_2))
-			return 6;
-		if (inB(angle, -M_PI_2, -M_PI_4))
-			return 7;
-		if (inB(angle, -M_PI_4, 0.))
-			return 8;
-		if (inB(angle, 0., M_PI_4))
-			return 1;
-		if (inB(angle, M_PI_4, M_PI_2))
-			return 2;
-		if (inB(angle, M_PI_2, M_PI_3_4))
-			return 3;
-		if (inB(angle, M_PI_3_4, M_PI))
-			return 4;
-		
-		return -1;
-	}
-
-	// forward means from real coordinates to algorithm's
-	// !forward == from algo's to real
-	void swapCoords(int &x, int &y, int octant, bool forward)
-	{
-		switch (octant)
-		{
-		case 1:
-			break;
-		case 2:
-			std::swap(x, y);
-			break;
-		case 3:
-			if (forward) x = -x;
-			std::swap(x, y);
-			if (!forward) x = -x;
-			break;
-		case 4:
-			x = -x;
-			break;
-		case 5:
-			x = -x;
-			y = -y;
-			break;
-		case 6:
-			x = -x;
-			y = -y;
-			std::swap(x, y);
-			break;
-		case 7:
-			if (forward) y = -y;
-			std::swap(x, y);
-			if (!forward) y = -y;
-			break;
-		case 8:
-			y = -y;
-			break;
-		}
-	}
-	float getSlope(double angle)
-	{
-		float answer = static_cast<float>(tan(angle));
-		if (answer < 0) answer = -answer;
-		if (answer > 1.f) answer = 1.f / answer;
-		return answer;
-	}
-
-	
-
-	void drawLinef(core::Texture *image, int x0, int y0, double angle)
-	{
-		int octant = getOctant(angle);
-		float slope = getSlope(angle);
-
-		int x = x0;
-		int y = y0;
-		
-		float error = 0;
-		while (inB(x, image->width()) && inB(y, image->height()))
-		{
-			image->getData(x, y, core::Texture::RED) = 0xff;
-			swapCoords(x, y, octant, true);
-			error += slope;
-			++x;
-			if (error > 0.5f)
-			{
-				error -= 1.f;
-				++y;
-			}
-			swapCoords(x, y, octant, false);
-		}
-	}
-
-	void drawLine(core::Texture * image, int x0, int y0, int x1, int y1)
-	{
-		// TODO fix
-		int dx = x1 - x0;
-		int dy = y1 - y0;
-		int octant = getOctant(dx, dy);
-		float slope = getSlope(atan2(dy, dx));
-		
-		int x = x0;
-		int y = y0;
-
-		int accX = 0;
-		float error = 0;
-		int fin = std::max(abs(dx), abs(dy));
-		while (accX < fin)
-		{
-			if (inB(x, image->width()) && inB(y, image->height()))
-				image->getData(x, y, core::Texture::BLUE) = 0xff;
-			swapCoords(x, y, octant, true);
-			error += slope;
-			++x; ++accX;
-			if (error > 0.5f)
-			{
-				error -= 1.f;
-				++y;
-			}
-			swapCoords(x, y, octant, false);
-		}
-	}
-
-    //real deal
     template<>
     bool vec2<float>::operator==(const vec2<float> &o) const
     {
@@ -161,12 +15,72 @@ namespace raycaster
         return fabsf(x - o.x) < EPS && fabsf(y - o.y) < EPS;
     }
     
-    vec2<float> RepeatingSampler::sample(vec2<float> normCoord, vec2<float> dimentions)
+    float getFraction(float n)
     {
-        vec2<float> coord = getFraction(normCoord);
-        return coord.multPerCoord(dimentions);
+        float _res = n - int(n);
+        return (_res >= 0.f) ? _res : (1.f + _res);
+    }
+    vec2<float> getFraction(vec2<float> v)
+    {
+        return vec2<float>(getFraction(v.x), getFraction(v.y));
+    }
+    int getOctant(float angle)
+    {
+        const static double M_PI_3_4 = M_PI_2 + M_PI_4;
+        if (inB<float>(angle, -M_PI, -M_PI_3_4))
+            return 5;
+        if (inB<float>(angle, -M_PI_3_4, -M_PI_2))
+            return 6;
+        if (inB<float>(angle, -M_PI_2, -M_PI_4))
+            return 7;
+        if (inB<float>(angle, -M_PI_4, 0.))
+            return 8;
+        if (inB<float>(angle, 0., M_PI_4))
+            return 1;
+        if (inB<float>(angle, M_PI_4, M_PI_2))
+            return 2;
+        if (inB<float>(angle, M_PI_2, M_PI_3_4))
+            return 3;
+        if (inB<float>(angle, M_PI_3_4, M_PI))
+            return 4;
+        return -1;
     }
     
-    
-    
+    int modSgn(int x)
+    {
+        return x > 0 ? 1 : 0;
+    }
+    vec2<int> getDeltaBrick(float angle)
+    {
+        angle = convertAngle(angle);
+        
+        if (angle < M_PI / 2.f)
+        {
+            return vec2<int>(1, 1);
+        }
+        if (angle < M_PI)
+        {
+            return vec2<int>(-1, 1);
+        }
+        if (angle < 3.f*M_PI / 2.f)
+        {
+            return vec2<int>(-1, -1);
+        }
+        
+        return vec2<int>(1, -1);
+    }
+    float convertAngle(float angle)
+    {
+        const float D_PI = M_PI + M_PI;
+        
+        while (angle < 0.f)
+        {
+            angle += D_PI;
+        }
+        while (angle >= D_PI)
+        {
+            angle -= D_PI;
+        }
+        return angle;
+    }
 }

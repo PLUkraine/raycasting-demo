@@ -6,21 +6,21 @@
 
 namespace core
 {
-	class Window
-	{
-	private:
-		GLFWwindow *m_window;
-
-	public:
-		Window();
-		~Window();
-
-		void createGlContext(int width, int height);
-		void update();
-		void dispose();
-		inline int mustClose() { return glfwWindowShouldClose(m_window); }
-		inline int getKeyState(int key) { return glfwGetKey(m_window, key); }
-	};
+    class Window
+    {
+    private:
+        GLFWwindow *m_window;
+        
+    public:
+        Window();
+        ~Window();
+        
+        void createGlContext(int width, int height);
+        void update();
+        void dispose();
+        inline int mustClose() { return glfwWindowShouldClose(m_window); }
+        inline int getKeyState(int key) { return glfwGetKey(m_window, key); }
+    };
 }
 
 #endif

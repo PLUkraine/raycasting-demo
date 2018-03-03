@@ -43,7 +43,7 @@ namespace core
         const static int RED = 0;
         const static int GREEN = 1;
         const static int BLUE = 2;
-    
+        
     public:
         ~Image();
         
@@ -52,43 +52,43 @@ namespace core
     };
     
     class Texture : public ImageBase
-	{
-	private:
-		const static int COLORS = 3;
-		GLuint m_glTex;
-	public:
-		const static int RED = 0;
-		const static int GREEN = 1;
-		const static int BLUE = 2;
-
-	public:
-		// initialize empty texture
-		Texture();
-		Texture(const Texture&) = delete;
-		~Texture();
-		void dispose();
-
-		// create OpenGL texture and fill it with black color
-		void createGlTexture(int width, int height);
-		// fill local buffer with black color
-		void clearTexture() const;
-		// load from local buffer to Video card RAM
-		void loadToVRAM() const;
-		
+    {
+    private:
+        const static int COLORS = 3;
+        GLuint m_glTex;
+    public:
+        const static int RED = 0;
+        const static int GREEN = 1;
+        const static int BLUE = 2;
+        
+    public:
+        // initialize empty texture
+        Texture();
+        Texture(const Texture&) = delete;
+        ~Texture();
+        void dispose();
+        
+        // create OpenGL texture and fill it with black color
+        void createGlTexture(int width, int height);
+        // fill local buffer with black color
+        void clearTexture() const;
+        // load from local buffer to Video card RAM
+        void loadToVRAM() const;
+        
         // bind texture as current 2d texture
-		inline void bindTexture() const
-		{
-			glBindTexture(GL_TEXTURE_2D, m_glTex);
-		}
-		// get one byte from local buffer (read or write)
-		inline void setPixel(int x, int y, GLubyte r, GLubyte g, GLubyte b)
-		{
-			GLubyte *p_data = m_data + y*(m_width*COLORS) + x*COLORS;
-			*p_data = r;
-			*(++p_data) = g;
-			*(++p_data) = b;
-		}
-	};
+        inline void bindTexture() const
+        {
+            glBindTexture(GL_TEXTURE_2D, m_glTex);
+        }
+        // get one byte from local buffer (read or write)
+        inline void setPixel(int x, int y, GLubyte r, GLubyte g, GLubyte b)
+        {
+            GLubyte *p_data = m_data + y*(m_width*COLORS) + x*COLORS;
+            *p_data = r;
+            *(++p_data) = g;
+            *(++p_data) = b;
+        }
+    };
 }
 
 #endif

@@ -75,6 +75,10 @@ namespace raycaster
         {
             return sqrtf(x*x + y*y);
         }
+        float sqrLen() const
+        {
+            return x*x + y*y;
+        }
         vec2<float> norm() const
         {
             float l = len();
@@ -86,20 +90,7 @@ namespace raycaster
             return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
         }
     };
-    // TODO make_vec2 function - perfect forwarding is used here, look it up
     
-    // interface for sampling in normalized coordinates
-    class Sampler
-    {
-    public:
-        virtual vec2<float> sample(vec2<float> normCoord, vec2<float> dimentions)=0;
-    };
-    
-    class RepeatingSampler : Sampler
-    {
-    public:
-        vec2<float> sample(vec2<float> normCoord, vec2<float> dimentions);
-    };
     
     template <class T>
     bool inB(T v, T a, T b)
@@ -107,18 +98,12 @@ namespace raycaster
         return a <= v && v < b;
     }
     
-	void drawLinef(core::Texture *image, int x0, int y0, double angle);
-	void drawLine(core::Texture *image, int x0, int y0, int x1, int y1);
-	int getOctant(double angle);
-    inline float getFraction(float n)
-    {
-        float _res = n - int(n);
-        return (_res >= 0.f) ? _res : (1.f + _res);
-    }
-    inline vec2<float> getFraction(vec2<float> v)
-    {
-        return vec2<float>(getFraction(v.x), getFraction(v.y));
-    }
+    float getFraction(float n);
+    vec2<float> getFraction(vec2<float> v);
+    int getOctant(float angle);
+    int modSgn(int x);
+    vec2<int> getDeltaBrick(float angle);
+    float convertAngle(float angle);
 }
 
 #endif

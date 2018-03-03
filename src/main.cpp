@@ -29,39 +29,39 @@ const int BOARD_HEIGHT = 16;
 
 void glfwErrorCallback(int error, const char *desc)
 {
-	console->error(desc);
+    console->error(desc);
 }
 
 // wrap angle into [-M_PI, M_PI] interval
 float wrapAngle(float angle)
 {
-	if (angle > M_PI)
-		angle -= M_PI + M_PI;
-	else if (angle < -M_PI)
-		angle += M_PI + M_PI;
-	return angle;
+    if (angle > M_PI)
+        angle -= M_PI + M_PI;
+    else if (angle < -M_PI)
+        angle += M_PI + M_PI;
+    return angle;
 }
 
 inline bool inB(int v, int b)
 {
-	return 0 <= v && v < b;
+    return 0 <= v && v < b;
 }
 
 inline int get1dIndex(int i, int j, int width)
 {
-	return i*width + j;
+    return i*width + j;
 }
 
 class Player
 {
 public:
     raycaster::vec2<float> m_pos;
-	float m_angle;
-	float m_fov;
+    float m_angle;
+    float m_fov;
 public:
-	Player(float x = 0, float y = 0, float angle = 0, float fov=75.f)
-		: m_pos(x,y), m_angle(angle), m_fov(fov)
-	{}
+    Player(float x = 0, float y = 0, float angle = 0, float fov=75.f)
+    : m_pos(x,y), m_angle(angle), m_fov(fov)
+    {}
     
     void moveForward(float factor)
     {
@@ -75,92 +75,92 @@ public:
     {
         m_angle = wrapAngle(m_angle + onAngleRad);
     }
-
-	float lAngle() const
-	{
-		return wrapAngle(m_angle - m_fov / 2.f);
-	}
-	float rAngle() const
-	{
-		return wrapAngle(m_angle + m_fov / 2.f);
-	}
+    
+    float lAngle() const
+    {
+        return wrapAngle(m_angle - m_fov / 2.f);
+    }
+    float rAngle() const
+    {
+        return wrapAngle(m_angle + m_fov / 2.f);
+    }
 };
 
 template <typename T>
 T clamp(T a, T b, T value)
 {
-	if (value < a) return a;
-	else if (value > b) return b;
-	else return value;
+    if (value < a) return a;
+    else if (value > b) return b;
+    else return value;
 }
 using raycaster::vec2;
 
 int main()
 {
-	console->set_level(spdlog::level::debug);
+    console->set_level(spdlog::level::debug);
     
-	glfwInit();
-	glfwSetErrorCallback(glfwErrorCallback);
-
-	// init
-	core::Window window;
-	window.createGlContext(WIDTH, HEIGHT);
-
-	Shader shader("shader.vert", "shader.frag");
-	shader.use();
-	
+    glfwInit();
+    glfwSetErrorCallback(glfwErrorCallback);
+    
+    // init
+    core::Window window;
+    window.createGlContext(WIDTH, HEIGHT);
+    
+    Shader shader("shader.vert", "shader.frag");
+    shader.use();
+    
     // tex1 doesn't have to be a pointer, just a legacy I'm too lasy to get rid of
-	core::Texture *tex1 = new core::Texture();
-	tex1->createGlTexture(TEX1_WIDTH, TEX1_HEIGHT);
+    core::Texture *tex1 = new core::Texture();
+    tex1->createGlTexture(TEX1_WIDTH, TEX1_HEIGHT);
     core::Image brickTexture;
     brickTexture.loadFromFile("brick.png");
-	core::ImageRenderer renderer;
-
-	bool board[BOARD_HEIGHT][BOARD_WIDTH] =
-	{
-		{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-		{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1 },
-		{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1 },
-		{ 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1 },
-		{ 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
-		{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-	};
-
-
-	// Game Loop
-	double start = glfwGetTime();
-	Player p(BOARD_WIDTH/2, BOARD_HEIGHT/2, 0.f, glm::radians(45.f));
-	while (!window.mustClose())
-	{
-		double end = glfwGetTime();
-		double dt = end - start;
-		start = end;
+    core::ImageRenderer renderer;
+    
+    bool board[BOARD_HEIGHT][BOARD_WIDTH] =
+    {
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1 },
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1 },
+        { 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1 },
+        { 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    };
+    
+    
+    // Game Loop
+    double start = glfwGetTime();
+    Player p(BOARD_WIDTH/2+0.1f, BOARD_HEIGHT/2+0.1f, 0.f, glm::radians(45.f));
+    while (!window.mustClose())
+    {
+        double end = glfwGetTime();
+        double dt = end - start;
+        start = end;
         // make processor sleep if we are getting our job done in time
-		if (dt < (1. / 60.))
-		{
-			std::this_thread::sleep_for(std::chrono::milliseconds((1000 / 60 - (int)dt*1000)));
-		}
-		
-		// input processing ...
+        if (dt < (1. / 60.))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds((1000 / 60 - (int)dt*1000)));
+        }
+        
+        // input processing ...
         // rotations
-		if (window.getKeyState(GLFW_KEY_LEFT) == GLFW_PRESS)
+        if (window.getKeyState(GLFW_KEY_LEFT) == GLFW_PRESS)
             p.rotate(-1.15f*dt);
-		if (window.getKeyState(GLFW_KEY_RIGHT) == GLFW_PRESS)
+        if (window.getKeyState(GLFW_KEY_RIGHT) == GLFW_PRESS)
             p.rotate(1.15f*dt);
         // walking forwards/backwards
-		if (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_UP)
+        if (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_UP)
             |window.getKeyState(GLFW_KEY_W)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS)
-		{
+        {
             vec2<float> previous = p.m_pos;
             float moveFactor = (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS ? -dt : dt) * 3.0f;
             p.moveForward(moveFactor);
@@ -169,7 +169,7 @@ int main()
             {
                 p.m_pos = previous;
             }
-		}
+        }
         // strafing left/right
         if (window.getKeyState(GLFW_KEY_A)|window.getKeyState(GLFW_KEY_D) == GLFW_PRESS)
         {
@@ -182,72 +182,88 @@ int main()
                 p.m_pos = previous;
             }
         }
-
-		// update texture here ...
-		tex1->clearTexture();
-		// raycast here!
-		const float MAX_DIST = 16.f;
-		const float DIST_STEP = 0.05f;
-		for (int x = 0; x < tex1->width(); ++x)
-		{
+        
+        // update texture here ...
+        tex1->clearTexture();
+        // raycast here!
+        const float MAX_DIST = 16.f;
+        for (int x = 0; x < tex1->width(); ++x)
+        {
             // [-pov/2; +pov/2]
-			float rayDisplacementAngle = -p.m_fov / 2.f + (1.f * x / tex1->width()) * p.m_fov;
-			float rayAngle = p.m_angle + rayDisplacementAngle;
-			float wallDist = 0.f;
-            vec2<float> projVec = {cosf(rayAngle), sinf(rayAngle)};
+            float rayDisplacementAngle = -p.m_fov / 2.f + (1.f * x / tex1->width()) * p.m_fov;
+            float rayAngle = p.m_angle + rayDisplacementAngle;
             
-			bool wallHit = false;
-            //
+            float wallDist = 0.f;
+            bool wallHit = false;
             vec2<float> uvTextureSample(0.f, 0.f);
-			while (!wallHit && wallDist < MAX_DIST)
-			{
-				wallDist += DIST_STEP;
-                vec2<float> hitCoord = p.m_pos + projVec*wallDist;
-                vec2<int> blockCoord = vec2<int>(hitCoord.x, hitCoord.y);
-
-				if (!inB(blockCoord.y, BOARD_WIDTH) || !inB(blockCoord.x, BOARD_HEIGHT))
-				{
-					wallHit = true;
-					wallDist = MAX_DIST;
-				}
-				else
-				{
-					if (board[blockCoord.y][blockCoord.x])
-					{
-						wallHit = true;
-                        
-                        vec2<float> wallCenter = vec2<float>(blockCoord.x+0.5f, blockCoord.y+0.5f);
-                        vec2<float> dirFromCenter = hitCoord - wallCenter;
-                        float angle = atan2(dirFromCenter.y, dirFromCenter.x);
-                        int octant = raycaster::getOctant((double)angle);
-                        
-                        if (octant==4||octant==5)
-                            uvTextureSample.x = raycaster::getFraction(hitCoord.y);
-                        if(octant==8||octant==1)
-                            uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.y);
-                        if (octant==6||octant==7)
-                            uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.x);
-                        if (octant==2||octant==3)
-                            uvTextureSample.x = raycaster::getFraction(hitCoord.x);
-					}
-				}
-			}
-
+            
+            vec2<int> curBrick(floorf(p.m_pos.x), floorf(p.m_pos.y));
+            vec2<int> brickStep = raycaster::getDeltaBrick(rayAngle);
+            vec2<float> hitCoord = p.m_pos;
+            vec2<float> initDelta = vec2<float>(raycaster::modSgn(brickStep.x), raycaster::modSgn(brickStep.y)) + vec2<float>(curBrick) - p.m_pos;
+            
+            float tanRayAngle = fabsf(tanf(rayAngle));
+            float dx = brickStep.x * 1.f / tanRayAngle;
+            float dy = brickStep.y * tanRayAngle;
+            
+            vec2<float> advanceX = hitCoord + vec2<float>(initDelta.x, brickStep.y * fabsf(initDelta.x * tanRayAngle));
+            vec2<float> advanceY = hitCoord + vec2<float>(brickStep.x * fabsf(initDelta.y / tanRayAngle), initDelta.y);
+            
+            while (!wallHit)
+            {
+                if (board[curBrick.y][curBrick.x] || (hitCoord-p.m_pos).sqrLen() >= MAX_DIST*MAX_DIST)
+                {
+                    wallHit = true;
+                    wallDist = std::min(MAX_DIST, (hitCoord-p.m_pos).len());
+                    
+                    vec2<float> wallCenter = vec2<float>(curBrick.x+0.5f, curBrick.y+0.5f);
+                    vec2<float> dirFromCenter = hitCoord - wallCenter;
+                    float angle = atan2(dirFromCenter.y, dirFromCenter.x);
+                    int octant = raycaster::getOctant((double)angle);
+                    
+                    if (octant==4||octant==5)
+                        uvTextureSample.x = raycaster::getFraction(hitCoord.y);
+                    if(octant==8||octant==1)
+                        uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.y);
+                    if (octant==6||octant==7)
+                        uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.x);
+                    if (octant==2||octant==3)
+                        uvTextureSample.x = raycaster::getFraction(hitCoord.x);
+                }
+                else
+                {
+                    if ((advanceX - p.m_pos).sqrLen() < (advanceY - p.m_pos).sqrLen())
+                    {
+                        // move in X
+                        hitCoord = advanceX;
+                        advanceX += vec2<float>(brickStep.x, dy);
+                        curBrick.x += brickStep.x;
+                    }
+                    else
+                    {
+                        // move in Y
+                        hitCoord = advanceY;
+                        advanceY += vec2<float>(dx, brickStep.y);
+                        curBrick.y += brickStep.y;
+                    }
+                }
+            }
+            
             // z is a distance to a wall
             // this line prevents the Fisheye Effect
-			float z = wallDist * cosf(rayDisplacementAngle);
-			int floorYBorder = tex1->height() / 2.f - tex1->height() / z;
-			int ceilingYBorder = tex1->height() - floorYBorder;
-
-			// white near us, black when far
+            float z = wallDist * cosf(rayDisplacementAngle);
+            int floorYBorder = tex1->height() / 2.f - tex1->height() / z;
+            int ceilingYBorder = tex1->height() - floorYBorder;
+            
+            // white near us, black when far
             float colorMult = 1.0 * (1 - z / MAX_DIST);
-
+            
             // paint the texture
             // TODO do it in shader one day
-			for (int y = 0; y < tex1->height(); ++y)
-			{
+            for (int y = 0; y < tex1->height(); ++y)
+            {
                 // floor
-				if (y <= floorYBorder) {
+                if (y <= floorYBorder) {
                     tex1->setPixel(x, y, 0x55, 0x55, 0x55);
                 }
                 // wall
@@ -264,23 +280,23 @@ int main()
                 else {
                     tex1->setPixel(x, y, 0x55, 0x55, 0xff);
                 }
-			}
-
-		}
-		tex1->loadToVRAM();
-
-		// rendering texture ...
-		renderer.render(tex1, &shader);
-
-		// polling events and swapping buffers ...
-		window.update();
-	}
-
+            }
+            
+        }
+        tex1->loadToVRAM();
+        
+        // rendering texture ...
+        renderer.render(tex1, &shader);
+        
+        // polling events and swapping buffers ...
+        window.update();
+    }
+    
     brickTexture.dispose();
-	tex1->dispose();
-	renderer.dispose();
-	window.dispose();
-	glfwTerminate();
-
-	return 0;
+    tex1->dispose();
+    renderer.dispose();
+    window.dispose();
+    glfwTerminate();
+    
+    return 0;
 }
