@@ -15,8 +15,8 @@
 #include "Texture.h"
 #include "ImageRenderer.h"
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
+const int WIDTH = 1024;
+const int HEIGHT = 768;
 auto console = spdlog::stdout_color_st("console");
 
 const char *VERTEX_SHADER = "shader.vert";
@@ -55,34 +55,72 @@ inline int get1dIndex(int i, int j, int width)
 class Player
 {
 public:
-    raycaster::vec2<float> m_pos;
-    float m_angle;
-    float m_fov;
+    raycaster::vec2<float> pos;
+    float angle;
+    float fov;
 public:
     Player(float x = 0, float y = 0, float angle = 0, float fov=75.f)
-    : m_pos(x,y), m_angle(angle), m_fov(fov)
+    : pos(x,y), angle(angle), fov(fov)
     {}
     
     void moveForward(float factor)
     {
-        m_pos += raycaster::vec2<float>(cosf(m_angle), sinf(m_angle)) * factor;
+        pos += raycaster::vec2<float>(cosf(angle), sinf(angle)) * factor;
     }
     void strafeRight(float factor)
     {
-        m_pos += raycaster::vec2<float>(cosf(m_angle+M_PI_2), sinf(m_angle+M_PI_2)) * factor;
+        pos += raycaster::vec2<float>(cosf(angle+M_PI_2), sinf(angle+M_PI_2)) * factor;
     }
     void rotate(float onAngleRad)
     {
-        m_angle = wrapAngle(m_angle + onAngleRad);
+        angle = wrapAngle(angle + onAngleRad);
     }
     
     float lAngle() const
     {
-        return wrapAngle(m_angle - m_fov / 2.f);
+        return wrapAngle(angle - fov / 2.f);
     }
     float rAngle() const
     {
-        return wrapAngle(m_angle + m_fov / 2.f);
+        return wrapAngle(angle + fov / 2.f);
+    }
+    
+    void update(float dt, core::Window& window, bool board[][BOARD_WIDTH])
+    {
+        // rotations
+        if (window.getKeyState(GLFW_KEY_LEFT) == GLFW_PRESS)
+        {
+            rotate(-1.15f*dt);
+        }
+        if (window.getKeyState(GLFW_KEY_RIGHT) == GLFW_PRESS)
+        {
+            rotate(1.15f*dt);
+        }
+        // walking forwards/backwards
+        if (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_UP)
+            |window.getKeyState(GLFW_KEY_W)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS)
+        {
+            raycaster::vec2<float> previous = pos;
+            float moveFactor = (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS ? -dt : dt) * 3.0f;
+            moveForward(moveFactor);
+            
+            if (board[(int)pos.y][(int)pos.x])
+            {
+                pos = previous;
+            }
+        }
+        // strafing left/right
+        if (window.getKeyState(GLFW_KEY_A)|window.getKeyState(GLFW_KEY_D) == GLFW_PRESS)
+        {
+            raycaster::vec2<float> previous = pos;
+            float moveFactor = (window.getKeyState(GLFW_KEY_A) == GLFW_PRESS ? -dt : dt) * 3.0f;
+            strafeRight(moveFactor);
+            
+            if (board[(int)pos.y][(int)pos.x])
+            {
+                pos = previous;
+            }
+        }
     }
 };
 
@@ -152,36 +190,7 @@ int main()
         }
         
         // input processing ...
-        // rotations
-        if (window.getKeyState(GLFW_KEY_LEFT) == GLFW_PRESS)
-            p.rotate(-1.15f*dt);
-        if (window.getKeyState(GLFW_KEY_RIGHT) == GLFW_PRESS)
-            p.rotate(1.15f*dt);
-        // walking forwards/backwards
-        if (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_UP)
-            |window.getKeyState(GLFW_KEY_W)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS)
-        {
-            vec2<float> previous = p.m_pos;
-            float moveFactor = (window.getKeyState(GLFW_KEY_DOWN)|window.getKeyState(GLFW_KEY_S) == GLFW_PRESS ? -dt : dt) * 3.0f;
-            p.moveForward(moveFactor);
-            
-            if (board[(int)p.m_pos.y][(int)p.m_pos.x])
-            {
-                p.m_pos = previous;
-            }
-        }
-        // strafing left/right
-        if (window.getKeyState(GLFW_KEY_A)|window.getKeyState(GLFW_KEY_D) == GLFW_PRESS)
-        {
-            vec2<float> previous = p.m_pos;
-            float moveFactor = (window.getKeyState(GLFW_KEY_A) == GLFW_PRESS ? -dt : dt) * 3.0f;
-            p.strafeRight(moveFactor);
-            
-            if (board[(int)p.m_pos.y][(int)p.m_pos.x])
-            {
-                p.m_pos = previous;
-            }
-        }
+        p.update(dt, window, board);
         
         // update texture here ...
         tex1->clearTexture();
@@ -190,17 +199,19 @@ int main()
         for (int x = 0; x < tex1->width(); ++x)
         {
             // [-pov/2; +pov/2]
-            float rayDisplacementAngle = -p.m_fov / 2.f + (1.f * x / tex1->width()) * p.m_fov;
-            float rayAngle = p.m_angle + rayDisplacementAngle;
+            float rayDisplacementAngle = -p.fov / 2.f + (1.f * x / tex1->width()) * p.fov;
+            float rayAngle = p.angle + rayDisplacementAngle;
             
             float wallDist = 0.f;
             bool wallHit = false;
             vec2<float> uvTextureSample(0.f, 0.f);
+            // to create "shadow" effect we divide final color by this value
+            int side = 1;
             
-            vec2<int> curBrick(floorf(p.m_pos.x), floorf(p.m_pos.y));
+            vec2<int> curBrick(floorf(p.pos.x), floorf(p.pos.y));
             vec2<int> brickStep = raycaster::getDeltaBrick(rayAngle);
-            vec2<float> hitCoord = p.m_pos;
-            vec2<float> initDelta = vec2<float>(raycaster::modSgn(brickStep.x), raycaster::modSgn(brickStep.y)) + vec2<float>(curBrick) - p.m_pos;
+            vec2<float> hitCoord = p.pos;
+            vec2<float> initDelta = vec2<float>(raycaster::modSgn(brickStep.x), raycaster::modSgn(brickStep.y)) + vec2<float>(curBrick) - p.pos;
             
             float tanRayAngle = fabsf(tanf(rayAngle));
             float dx = brickStep.x * 1.f / tanRayAngle;
@@ -211,28 +222,44 @@ int main()
             
             while (!wallHit)
             {
-                if (board[curBrick.y][curBrick.x] || (hitCoord-p.m_pos).sqrLen() >= MAX_DIST*MAX_DIST)
+                if (board[curBrick.y][curBrick.x] || (hitCoord-p.pos).sqrLen() >= MAX_DIST*MAX_DIST)
                 {
                     wallHit = true;
-                    wallDist = std::min(MAX_DIST, (hitCoord-p.m_pos).len());
+                    wallDist = std::min(MAX_DIST, (hitCoord-p.pos).len());
                     
+                    // calculating texture sampling u coordinate
                     vec2<float> wallCenter = vec2<float>(curBrick.x+0.5f, curBrick.y+0.5f);
                     vec2<float> dirFromCenter = hitCoord - wallCenter;
                     float angle = atan2(dirFromCenter.y, dirFromCenter.x);
                     int octant = raycaster::getOctant((double)angle);
                     
                     if (octant==4||octant==5)
+                    {
                         uvTextureSample.x = raycaster::getFraction(hitCoord.y);
+                        side = 1;
+                    }
                     if(octant==8||octant==1)
+                    {
                         uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.y);
+                        side = 1;
+                    }
                     if (octant==6||octant==7)
+                    {
                         uvTextureSample.x = 1.0f-raycaster::getFraction(hitCoord.x);
+                        side = 2;
+                    }
                     if (octant==2||octant==3)
+                    {
                         uvTextureSample.x = raycaster::getFraction(hitCoord.x);
+                        side = 2;
+                    }
                 }
                 else
                 {
-                    if ((advanceX - p.m_pos).sqrLen() < (advanceY - p.m_pos).sqrLen())
+                    // find intersection with the closest cell
+                    
+                    // if x advanced less then y
+                    if ((advanceX - p.pos).sqrLen() < (advanceY - p.pos).sqrLen())
                     {
                         // move in X
                         hitCoord = advanceX;
@@ -267,17 +294,19 @@ int main()
                     tex1->setPixel(x, y, 0x55, 0x55, 0x55);
                 }
                 // wall
-                else if (y < ceilingYBorder) {
+                else if (y < ceilingYBorder)
+                {
                     uvTextureSample.y = ((float)y - floorYBorder) / (ceilingYBorder - floorYBorder);
                     vec2<int> coord = uvTextureSample.multPerCoord(vec2<float>(brickTexture.width(), brickTexture.height()));
                     tex1->setPixel(x, y,
-                                   colorMult*brickTexture.getData(coord.x, coord.y, 0),
-                                   colorMult*brickTexture.getData(coord.x, coord.y, 1),
-                                   colorMult*brickTexture.getData(coord.x, coord.y, 2)
+                                   colorMult*brickTexture.getData(coord.x, coord.y, 0)/side,
+                                   colorMult*brickTexture.getData(coord.x, coord.y, 1)/side,
+                                   colorMult*brickTexture.getData(coord.x, coord.y, 2)/side
                                    );
                 }
                 // ceiling
-                else {
+                else
+                {
                     tex1->setPixel(x, y, 0x55, 0x55, 0xff);
                 }
             }
