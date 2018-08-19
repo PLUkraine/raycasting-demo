@@ -3,7 +3,10 @@ Raycasting game engine
 
 ![Screenshot](https://preview.ibb.co/huVc7n/Screen_Shot_2018_03_04_at_17_27_02.png "Screenshot")
 
-## How to build
+## Use CMake to build this project!
+Go to [CMake download page](https://cmake.org/download/). Download and use it to build the application. If you get the runtime errors, it might be caused by absence of the resources. In that case just manually copy *resources/* folder into your project
+
+## How to build (Manually)
 This project should work on Windows, Linux and Mac OS. Tested on Mac OS and Windows
 
 1. Build (or get) [static GLFW library](http://www.glfw.org/) for your system. Instructions on how to compile can be found [here](http://www.glfw.org/docs/latest/compile_guide.html)
@@ -15,7 +18,7 @@ This project should work on Windows, Linux and Mac OS. Tested on Mac OS and Wind
 
 3. Create a project in the IDE of your choise (ex. __XCode__ or __Visual Studio__) and add all files from *src/* directory.
 4. Link library and include *include* directory from this repository
-5. Compile the program and put contents of the __resources__ directory near executable. Or they should be put in the working directory of your IDE.
+5. Compile the program and put __resources__ directory near executable. Or they should be put in the working directory of your IDE.
 6. Run the program and have fun :)
 
 * Note for Windows users - link opengl32.lib library as well

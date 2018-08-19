@@ -19,8 +19,8 @@ const int WIDTH = 1024;
 const int HEIGHT = 768;
 auto console = spdlog::stdout_color_st("console");
 
-const char *VERTEX_SHADER = "shader.vert";
-const char *FRAGMENT_SHADER = "shader.frag";
+const char *VERTEX_SHADER = "resources/shader.vert";
+const char *FRAGMENT_SHADER = "resources/shader.frag";
 const int TEX1_WIDTH = 320;
 const int TEX1_HEIGHT = 280;
 const int BOARD_WIDTH = 16;
@@ -144,14 +144,14 @@ int main()
     core::Window window;
     window.createGlContext(WIDTH, HEIGHT);
     
-    Shader shader("shader.vert", "shader.frag");
+    Shader shader(VERTEX_SHADER, FRAGMENT_SHADER);
     shader.use();
     
     // tex1 doesn't have to be a pointer, just a legacy I'm too lasy to get rid of
     core::Texture *tex1 = new core::Texture();
     tex1->createGlTexture(TEX1_WIDTH, TEX1_HEIGHT);
     core::Image brickTexture;
-    brickTexture.loadFromFile("brick.png");
+    brickTexture.loadFromFile("resources/brick.png");
     core::ImageRenderer renderer;
     
     bool board[BOARD_HEIGHT][BOARD_WIDTH] =
